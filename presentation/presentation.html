@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Devops malmö - Containers</title>
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="reveal.js/css/theme/moon.css" id="theme">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
+
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+		<style>
+		.imageicon {
+			height: 0.9em !important;
+			background:none !important;
+			border:none !important;
+			box-shadow:none !important;
+			vertical-align: middle !important;
+			margin-right: 0.4em !important;
+		}
+		</style>
+	</head>
+
+	<body>
+
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h2>How containers work in linux</h2>
+					<p>By Simon Vikström</p>
+					<p>
+						<span><img src="assets/twitter.svg" class="imageicon"><a href="https://twitter.com/sa7sse">sa7sse</a></span>
+						<span><img src="assets/github.svg" class="imageicon"><a href="https://github.com/simonvik/">simonvik</a></span>
+
+					</p>
+				</section>
+				<section>
+					<section>
+						<h3>Cgroups</h3>
+						<p>cgroups (abbreviated from control groups) is a Linux kernel feature that limits, accounts for, and isolates the resource usage</p>
+					</section>
+					<section>
+						<h3>Cgroups</h3>
+						<ul>
+							<li>Cgroups can be accessed through a virtual filesystem</li>
+							<li class="fragment">The cgroup system in Linux is devided into multiple subsystems</li>
+							<li class="fragment">Each subsystem control some limits for a group of processes</li>
+							<li class="fragment">Examples of subsystems are memory, devices, cpu, ...</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Cgroups</h3>
+						<pre><code class="sh">
+$ ls -l /sys/fs/cgroup/memory/
+-rw-r--r--  1 root root 0 Feb 20 10:29 memory.limit_in_bytes
+-r--r--r--  1 root root 0 Feb 20 10:29 memory.usage_in_bytes
+-rw-r--r--  1 root root 0 Feb 20 10:29 tasks
+...
+
+$ mkdir /sys/fs/cgroup/memory/containers
+$ ls -l /sys/fs/cgroup/memory/containers
+-rw-r--r--  1 root root 0 Feb 20 10:30 memory.limit_in_bytes
+-r--r--r--  1 root root 0 Feb 20 10:30 memory.usage_in_bytes
+-rw-r--r--  1 root root 0 Feb 20 10:30 tasks
+...
+</code></pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>Namespaces</h3>
+						<p>Namespaces are a feature of the Linux kernel that partitions kernel resources such that one set of processes sees one set of resources while another set of processes sees a different set of resources</p>
+						<a href="https://linux.die.net/man/2/unshare">https://linux.die.net/man/2/unshare</a>
+					</section>
+					<section>
+						<h3>Namespaces</h3>
+						<p>There are multiple namespaces and we will focus on mount, pid, uts</p>
+					</section>
+					<section>
+						<h3>Namespaces</h3>
+						<ul>
+							<li>uts   <i>(CLONE_NEWUTS)</i> enables us to control the hostname seen from the process</li>
+							<li class="fragment">mount <i>(CLONE_NEWNS)</i>  enables us to unshare the mounts from the host</li>
+							<li class="fragment">pid   <i>(CLONE_NEWPID)</i> enables us to fake the process tree and make the process believe that its pid 1</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Namespaces</h3>
+						<p>There's two common ways to change a namespace for a process</p>
+						<p><pre><code class="c++">unshare(2)
+clone(2)</code></pre></p>
+						<p>We will focus use clone(2)</p>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>The root-fs</h3>
+						<p>Our goal is to create the smallest possible rootfs with PHP in it</p>
+						<p class="fragment">Why PHP?! Its close to static and has a lot of built-ins</p>
+					</section>
+					<section>
+						<h3>The root-fs</h3>
+						<p>Linux got a concept called shared libraries. Shared libraries are small pieces of programs that gets loaded when an application gets started</p>
+						<p class="fragment">We can use the command <code>ldd</code> to find the dependencies</p>
+					</section>
+					<section>
+						<h3>The root-fs</h3>
+						<pre><code style="overflow:hidden" class="bash">
+$ ldd /usr/bin/php
+linux-vdso.so.1 (0x00007fff9d7da000)
+libargon2.so.1 => /usr/lib/libargon2.so.1 (0x00007fedb08c8000)
+libresolv.so.2 => /usr/lib/libresolv.so.2 (0x00007fedb08af000)
+libreadline.so.8 => /usr/lib/libreadline.so.8 (0x00007fedb085d000)
+libz.so.1 => /usr/lib/libz.so.1 (0x00007fedb0646000)
+librt.so.1 => /usr/lib/librt.so.1 (0x00007fedb063c000)
+libm.so.6 => /usr/lib/libm.so.6 (0x00007fedb04b7000)
+/lib64/ld-linux-x86-64.so.2 => /usr/lib64/ld-linux-x86-64.so.2 (0x00007fedb17fe000)
+...</code></pre>
+					</section>
+					<section>
+						<h3>The root-fs</h3>
+						<pre><code style="overflow:hidden" class="bash">
+$ mkdir rootfs
+$ cd rootfs
+$ ldd /usr/bin/php | awk '{print $3}' \
+  | xargs -i cp --parents {} .
+$ cp --parents /lib64/ld-linux-x86-64.so.2 .
+$ cp --parents /usr/bin/php .
+$ mkdir proc
+$ mkdir .oldroot
+
+# write your php nice code
+$ $EDITOR index.php
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<h1>Time for some C-code!</h1>
+				</section>
+				<section>
+					<h3>Links to interesting source code :)</h3>
+					<a href="https://github.com/opencontainers/runc/blob/master/libcontainer/nsenter/nsexec.c">https://github.com/opencontainers/runc/...</a>
+					<a href="https://github.com/systemd/systemd/blob/master/src/nspawn/nspawn.c">https://github.com/systemd/systemd/...</a>
+					<a href="https://github.com/google/nsjail">https://github.com/google/nsjail</a>
+				</section>
+			</div>
+		</div>
+
+		<script src="reveal.js/lib/js/head.min.js"></script>
+		<script src="reveal.js/js/reveal.js"></script>
+
+		<script>
+
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: false,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'reveal.js/plugin/search/search.js', async: true },
+					{ src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
+					{ src: 'reveal.js/plugin/notes/notes.js', async: true },
+				]
+			});
+
+			Reveal.configure({
+				keyboard: {
+					40: 'prev',
+					38: 'next'
+				}
+			});
+
+		</script>
+	</body>
+</html>
