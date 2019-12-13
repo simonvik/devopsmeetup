@@ -16,7 +16,6 @@
 
 		<!-- Theme used for syntax highlighting of code -->
 		<link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
-
 		<script>
 			var link = document.createElement( 'link' );
 			link.rel = 'stylesheet';
@@ -24,6 +23,8 @@
 			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
 			document.getElementsByTagName( 'head' )[0].appendChild( link );
 		</script>
+		<script src="snowstorm-min.js"></script>
+
 		<style>
 		.imageicon {
 			height: 0.9em !important;
@@ -48,6 +49,14 @@
 						<span><img src="assets/github.svg" class="imageicon"><a href="https://github.com/simonvik/">simonvik</a></span>
 
 					</p>
+				</section>
+				<section>
+					<h2>Dont try this as home ;)</h2>
+					<ul>
+						<li>Make sure that you do this single threaded</li>
+						<li>Make sure to handle ALL errors from the syscalls, you need to be root in order to access most of the NS/CGROUPS</li>
+						
+					</ul>
 				</section>
 				<section>
 					<section>
@@ -105,6 +114,19 @@ $ ls -l /sys/fs/cgroup/memory/containers
 						<p><pre><code class="c++">unshare(2)
 clone(2)</code></pre></p>
 						<p>We will focus use clone(2)</p>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>SECCOMP</h3>
+						<p>seccomp (short for secure computing mode) is a computer security facility in the Linux kernel. seccomp allows a process to make a one-way transition into a "secure" state where it cannot make any system calls </p>
+					</section>
+					<section>
+						<h3>SECCOMP</h3>
+						<ul>
+							<li>Can default to blacklist or whitelist</li>
+							<li>Allows us to block unsafe systems calls or allow safe ones</li>
+						</ul>
 					</section>
 				</section>
 				<section>

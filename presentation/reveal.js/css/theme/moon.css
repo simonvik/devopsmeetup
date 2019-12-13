@@ -15,8 +15,8 @@ html * {
  * GLOBAL STYLES
  *********************************************/
 body {
-  background: #002b36;
-  background-color: #002b36; }
+  background: #c20000;
+  background-color: #c20000; }
 
 .reveal {
   font-family: "Lato", sans-serif;
@@ -49,7 +49,7 @@ body {
 .reveal h5,
 .reveal h6 {
   margin: 0 0 20px 0;
-  color: #eee8d5;
+  color: #00f800;
   font-family: "League Gothic", Impact, sans-serif;
   font-weight: normal;
   line-height: 1.2;
